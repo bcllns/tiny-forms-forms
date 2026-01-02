@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { FormConfig, FormField } from "@/forms.json";
+import { Form, FormField } from "@/lib/supabase";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 
 interface DynamicFormProps {
-  config: FormConfig;
+  config: Form;
   onSuccess: () => void;
 }
 
@@ -32,7 +32,7 @@ export default function DynamicForm({ config, onSuccess }: DynamicFormProps) {
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    config.fields.forEach((field) => {
+    config.fields?.forEach((field) => {
       if (field.required && !formData[field.label]?.trim()) {
         newErrors[field.label] = `${field.label} is required`;
       }
@@ -235,7 +235,7 @@ export default function DynamicForm({ config, onSuccess }: DynamicFormProps) {
 
   return (
     <form onSubmit={handleSubmit}>
-      {config.fields.map(renderField)}
+      {config.fields?.map(renderField)}
       <Button
         type="submit"
         disabled={isSubmitting}

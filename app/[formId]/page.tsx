@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { supabase, Form, getImageUrl } from "@/lib/supabase";
 import DynamicForm from "@/components/DynamicForm";
 import ConfirmationPage from "@/components/ConfirmationPage";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
-export default function Home() {
+export default function FormByIdPage({ params }: { params: Promise<{ formId: string }> }) {
+  const { formId } = use(params);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [formConfig, setFormConfig] = useState<Form | null>(null);
   const [loading, setLoading] = useState(true);
@@ -17,19 +18,33 @@ export default function Home() {
   useEffect(() => {
     async function fetchForm() {
       try {
-        // Get the current domain
-        const currentDomain = window.location.host;
+        //before checking the ID, make sure the domain is correct
+        //either localhost or share.tinyforms.co
+        const allowedHosts = ["localhost", "share.tinyforms.co"];
+        if (!allowedHosts.includes(window.location.hostname)) {
+          window.location.href = "https://tinyforms.co";
+          return;
+        }
+        
+        // UUID regex pattern
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        
+        // Validate UUID format
+        if (!uuidRegex.test(formId)) {
+          window.location.href = "https://tinyforms.co";
+          return;
+        }
 
-        // Fetch by domain only (form IDs are handled by the dynamic route)
+        // Fetch the form by ID
         const { data: formData, error: formError } = await supabase
           .from("forms")
           .select("*")
-          .eq("domain", currentDomain)
+          .eq("id", formId)
           .single();
-        
-        // If domain not found, redirect to tinyforms.co
+
         if (formError || !formData) {
-          window.location.href = "https://tinyforms.co";
+          setError("Form not found");
+          setLoading(false);
           return;
         }
 
@@ -68,7 +83,7 @@ export default function Home() {
     }
 
     fetchForm();
-  }, []);
+  }, [formId]);
 
   const handleFormSuccess = () => {
     setShowConfirmation(true);
