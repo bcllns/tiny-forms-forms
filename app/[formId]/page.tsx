@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, use } from "react";
-import { forms, formFields, Form, getImageUrl } from "@/lib/forms";
+import { getFormById, Form, getImageUrl } from "@/lib/forms";
 import DynamicForm from "@/components/DynamicForm";
 import ConfirmationPage from "@/components/ConfirmationPage";
 import Header from "@/components/Header";
@@ -25,18 +25,19 @@ export default function FormByIdPage({ params }: { params: Promise<{ formId: str
           window.location.href = "https://tinyforms.co";
           return;
         }
-        
+
         // UUID regex pattern
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        
+
         // Validate UUID format
         if (!uuidRegex.test(formId)) {
           window.location.href = "https://tinyforms.co";
           return;
         }
 
-        // Find the form by ID
-        const formData = forms.find(f => f.id === formId);
+        // Fetch the form from Supabase
+        const formData = await getFormById(formId);
+        console.log("Fetched form:", formId);
 
         if (!formData) {
           setError("Form not found");
@@ -46,7 +47,7 @@ export default function FormByIdPage({ params }: { params: Promise<{ formId: str
 
         // Get the image URL
         if (formData.header_image) {
-          const url = getImageUrl(formData.header_image);
+          const url = getImageUrl(formData.id, formData.header_image);
           if (url) setImageUrl(url);
         }
 
@@ -104,23 +105,9 @@ export default function FormByIdPage({ params }: { params: Promise<{ formId: str
     <div className="min-h-screen flex flex-col">
       <main className="flex-grow container mx-auto px-4 py-12">
         <div className="max-w-xl mx-auto bg-white rounded-lg shadow-lg p-8">
-          <Header
-            text={formConfig.header_text}
-            image={imageUrl}
-            description={showConfirmation ? undefined : formConfig.header_description}
-          />
-          
-          {showConfirmation ? (
-            <ConfirmationPage
-              message={
-                formConfig.confirmation_message ||
-                "Thank you for your submission!"
-              }
-              onReset={handleReset}
-            />
-          ) : (
-            <DynamicForm config={formConfig} onSuccess={handleFormSuccess} />
-          )}
+          <Header text={formConfig.header_text} image={imageUrl} description={showConfirmation ? undefined : formConfig.header_description} />
+
+          {showConfirmation ? <ConfirmationPage message={formConfig.confirmation_message || "Thank you for your submission!"} onReset={handleReset} /> : <DynamicForm config={formConfig} onSuccess={handleFormSuccess} />}
         </div>
       </main>
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { forms, Form, getImageUrl } from "@/lib/forms";
+import { getFormByDomain, Form, getImageUrl } from "@/lib/forms";
 import DynamicForm from "@/components/DynamicForm";
 import ConfirmationPage from "@/components/ConfirmationPage";
 import Header from "@/components/Header";
@@ -20,18 +20,21 @@ export default function Home() {
         // Get the current domain
         const currentDomain = window.location.host;
 
-        // Find form by domain
-        const formData = forms.find(f => f.domain === currentDomain);
-        
+        // Fetch form by domain from Supabase
+        const formData = await getFormByDomain(currentDomain);
+
+        console.log("Fetched form for domain:", currentDomain);
+        console.log("Form data:", formData);
+
         // If domain not found, redirect to tinyforms.co
         if (!formData) {
-          window.location.href = "https://tinyforms.co";
+          //window.location.href = "https://tinyforms.co";
           return;
         }
 
         // Get the image URL
         if (formData.header_image) {
-          const url = getImageUrl(formData.header_image);
+          const url = getImageUrl(formData.id, formData.header_image);
           if (url) setImageUrl(url);
         }
 
@@ -89,23 +92,9 @@ export default function Home() {
     <div className="min-h-screen flex flex-col">
       <main className="flex-grow container mx-auto px-4 py-12">
         <div className="max-w-xl mx-auto bg-white rounded-lg shadow-lg p-8">
-          <Header
-            text={formConfig.header_text}
-            image={imageUrl}
-            description={showConfirmation ? undefined : formConfig.header_description}
-          />
-          
-          {showConfirmation ? (
-            <ConfirmationPage
-              message={
-                formConfig.confirmation_message ||
-                "Thank you for your submission!"
-              }
-              onReset={handleReset}
-            />
-          ) : (
-            <DynamicForm config={formConfig} onSuccess={handleFormSuccess} />
-          )}
+          <Header text={formConfig.header_text} image={imageUrl} description={showConfirmation ? undefined : formConfig.header_description} />
+
+          {showConfirmation ? <ConfirmationPage message={formConfig.confirmation_message || "Thank you for your submission!"} onReset={handleReset} /> : <DynamicForm config={formConfig} onSuccess={handleFormSuccess} />}
         </div>
       </main>
 

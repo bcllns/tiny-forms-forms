@@ -1,3 +1,5 @@
+import { supabase } from "./supabase";
+
 export interface FormField {
   id: string;
   form_id: string;
@@ -24,14 +26,70 @@ export interface Form {
   fields?: FormField[];
 }
 
-// This would be replaced with a database or API call in production
-// For now, forms are configured manually
-export const forms: Form[] = [];
+/**
+ * Fetch a form by its ID from Supabase
+ */
+export async function getFormById(formId: string): Promise<Form | null> {
+  const { data: form, error } = await supabase.from("forms").select("*").eq("id", formId).single();
 
-export const formFields: FormField[] = [];
+  if (error || !form) {
+    console.error("Error fetching form:", error);
+    return null;
+  }
 
-export function getImageUrl(path: string | null | undefined): string | null {
-  if (!path) return null;
-  // Return the path as-is for now, or implement your image hosting logic
-  return path;
+  // Fetch the form fields
+  const { data: fields, error: fieldsError } = await supabase.from("form_fields").select("*").eq("form_id", formId).order("order", { ascending: true });
+
+  if (fieldsError) {
+    console.error("Error fetching form fields:", fieldsError);
+  }
+
+  return {
+    ...form,
+    fields: fields || [],
+  };
+}
+
+/**
+ * Fetch a form by its domain from Supabase
+ */
+export async function getFormByDomain(domain: string): Promise<Form | null> {
+  const { data: form, error } = await supabase.from("forms").select("*").eq("domain", domain).single();
+
+  if (error || !form) {
+    console.error("Error fetching form by domain:", error);
+    return null;
+  }
+
+  // Fetch the form fields
+  const { data: fields, error: fieldsError } = await supabase.from("form_fields").select("*").eq("form_id", form.id).order("order", { ascending: true });
+
+  if (fieldsError) {
+    console.error("Error fetching form fields:", fieldsError);
+  }
+
+  return {
+    ...form,
+    fields: fields || [],
+  };
+}
+
+/**
+ * Get the full public URL for an image stored in Supabase Storage
+ * Images are stored in the header_images bucket with path: {form_id}/{filename}
+ */
+export function getImageUrl(formId: string, imagePath: string | null | undefined): string | null {
+  if (!imagePath) return null;
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!supabaseUrl) return null;
+
+  // If it's already a full URL, return as is
+  if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
+    return imagePath;
+  }
+
+  // Construct the public URL for Supabase Storage
+  // Format: {supabase_url}/storage/v1/object/public/header_images/{form_id}/{image_filename}
+  return `${supabaseUrl}/storage/v1/object/public/header_images/${formId}/${imagePath}`;
 }
