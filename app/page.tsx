@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { supabase, Form, getImageUrl } from "@/lib/supabase";
+import { forms, Form, getImageUrl } from "@/lib/forms";
 import DynamicForm from "@/components/DynamicForm";
 import ConfirmationPage from "@/components/ConfirmationPage";
 import Header from "@/components/Header";
@@ -20,45 +20,22 @@ export default function Home() {
         // Get the current domain
         const currentDomain = window.location.host;
 
-        // Fetch by domain only (form IDs are handled by the dynamic route)
-        const { data: formData, error: formError } = await supabase
-          .from("forms")
-          .select("*")
-          .eq("domain", currentDomain)
-          .single();
+        // Find form by domain
+        const formData = forms.find(f => f.domain === currentDomain);
         
         // If domain not found, redirect to tinyforms.co
-        if (formError || !formData) {
+        if (!formData) {
           window.location.href = "https://tinyforms.co";
           return;
         }
 
-        // Fetch the form fields
-        const { data: fieldsData, error: fieldsError } = await supabase
-          .from("form_fields")
-          .select("*")
-          .eq("form_id", formData.id)
-          .order("order", { ascending: true });
-
-        if (fieldsError) {
-          setError("Error loading form fields");
-          setLoading(false);
-          return;
+        // Get the image URL
+        if (formData.header_image) {
+          const url = getImageUrl(formData.header_image);
+          if (url) setImageUrl(url);
         }
 
-        // Combine form and fields
-        const form: Form = {
-          ...formData,
-          fields: fieldsData,
-        };
-
-        // Get the image URL from Supabase storage
-        if (form.header_image) {
-          const url = getImageUrl(form.id, form.header_image);
-          setImageUrl(url);
-        }
-
-        setFormConfig(form);
+        setFormConfig(formData);
         setLoading(false);
       } catch (err) {
         console.error("Error fetching form:", err);

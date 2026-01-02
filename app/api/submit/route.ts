@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as postmark from "postmark";
-import { supabase } from "@/lib/supabase";
+import { forms, formFields } from "@/lib/forms";
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,21 +13,8 @@ export async function POST(request: NextRequest) {
     const userAgent = request.headers.get("user-agent") || "unknown";
     const referrer = request.headers.get("referer") || "unknown";
 
-    // Save submission to Supabase
-    const { error: dbError } = await supabase
-      .from("form_submissions")
-      .insert({
-        form_id: formConfig.id,
-        submission_data: formData,
-        user_ip: userIp,
-        user_agent: userAgent,
-        referrer: referrer,
-      });
-
-    if (dbError) {
-      console.error("Error saving to database:", dbError);
-      // Continue with email even if database save fails
-    }
+    // Note: Database storage removed - forms are configured manually
+    // To re-enable, add your database logic here
 
     // Initialize Postmark client
     const client = new postmark.ServerClient(

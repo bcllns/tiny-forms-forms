@@ -109,7 +109,6 @@ npm start
 ## 🔮 Future Enhancements (Noted in Requirements)
 
 - Google reCaptcha integration (to be added after initial build)
-- Admin interface for managing forms
 - More field types
 - File uploads
 - Form analytics

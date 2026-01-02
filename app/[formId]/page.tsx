@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, use } from "react";
-import { supabase, Form, getImageUrl } from "@/lib/supabase";
+import { forms, formFields, Form, getImageUrl } from "@/lib/forms";
 import DynamicForm from "@/components/DynamicForm";
 import ConfirmationPage from "@/components/ConfirmationPage";
 import Header from "@/components/Header";
@@ -35,45 +35,22 @@ export default function FormByIdPage({ params }: { params: Promise<{ formId: str
           return;
         }
 
-        // Fetch the form by ID
-        const { data: formData, error: formError } = await supabase
-          .from("forms")
-          .select("*")
-          .eq("id", formId)
-          .single();
+        // Find the form by ID
+        const formData = forms.find(f => f.id === formId);
 
-        if (formError || !formData) {
+        if (!formData) {
           setError("Form not found");
           setLoading(false);
           return;
         }
 
-        // Fetch the form fields
-        const { data: fieldsData, error: fieldsError } = await supabase
-          .from("form_fields")
-          .select("*")
-          .eq("form_id", formData.id)
-          .order("order", { ascending: true });
-
-        if (fieldsError) {
-          setError("Error loading form fields");
-          setLoading(false);
-          return;
+        // Get the image URL
+        if (formData.header_image) {
+          const url = getImageUrl(formData.header_image);
+          if (url) setImageUrl(url);
         }
 
-        // Combine form and fields
-        const form: Form = {
-          ...formData,
-          fields: fieldsData,
-        };
-
-        // Get the image URL from Supabase storage
-        if (form.header_image) {
-          const url = getImageUrl(form.id, form.header_image);
-          setImageUrl(url);
-        }
-
-        setFormConfig(form);
+        setFormConfig(formData);
         setLoading(false);
       } catch (err) {
         console.error("Error fetching form:", err);

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Form, FormField } from "@/lib/supabase";
+import { Form, FormField } from "@/lib/forms";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
