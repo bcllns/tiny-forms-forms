@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { useReCaptcha } from "@/lib/recaptcha";
 
 interface DynamicFormProps {
   config: Form;
@@ -14,6 +15,7 @@ interface DynamicFormProps {
 }
 
 export default function DynamicForm({ config, onSuccess }: DynamicFormProps) {
+  const { executeRecaptcha } = useReCaptcha();
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -56,9 +58,17 @@ export default function DynamicForm({ config, onSuccess }: DynamicFormProps) {
       return;
     }
 
+    if (!executeRecaptcha) {
+      alert("reCAPTCHA not loaded. Please refresh the page.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
+      // Generate reCAPTCHA token
+      const recaptchaToken = await executeRecaptcha("form_submit");
+
       const response = await fetch("/api/submit", {
         method: "POST",
         headers: {
@@ -67,6 +77,7 @@ export default function DynamicForm({ config, onSuccess }: DynamicFormProps) {
         body: JSON.stringify({
           formConfig: config,
           formData,
+          recaptchaToken,
         }),
       });
 
@@ -94,17 +105,8 @@ export default function DynamicForm({ config, onSuccess }: DynamicFormProps) {
             <Label htmlFor={fieldId} className="block mb-2">
               {field.label} {field.required && <span className="text-red-500">*</span>}
             </Label>
-            <Input
-              id={fieldId}
-              type={field.type}
-              value={formData[field.label] || ""}
-              onChange={(e) => handleChange(field.label, e.target.value)}
-              placeholder={field.hint}
-              className={errors[field.label] ? "border-red-500" : ""}
-            />
-            {errors[field.label] && (
-              <p className="text-red-500 text-sm mt-1">{errors[field.label]}</p>
-            )}
+            <Input id={fieldId} type={field.type} value={formData[field.label] || ""} onChange={(e) => handleChange(field.label, e.target.value)} placeholder={field.hint} className={errors[field.label] ? "border-red-500" : ""} />
+            {errors[field.label] && <p className="text-red-500 text-sm mt-1">{errors[field.label]}</p>}
           </div>
         );
 
@@ -114,17 +116,8 @@ export default function DynamicForm({ config, onSuccess }: DynamicFormProps) {
             <Label htmlFor={fieldId} className="block mb-2">
               {field.label} {field.required && <span className="text-red-500">*</span>}
             </Label>
-            <Textarea
-              id={fieldId}
-              value={formData[field.label] || ""}
-              onChange={(e) => handleChange(field.label, e.target.value)}
-              placeholder={field.hint}
-              rows={4}
-              className={errors[field.label] ? "border-red-500" : ""}
-            />
-            {errors[field.label] && (
-              <p className="text-red-500 text-sm mt-1">{errors[field.label]}</p>
-            )}
+            <Textarea id={fieldId} value={formData[field.label] || ""} onChange={(e) => handleChange(field.label, e.target.value)} placeholder={field.hint} rows={4} className={errors[field.label] ? "border-red-500" : ""} />
+            {errors[field.label] && <p className="text-red-500 text-sm mt-1">{errors[field.label]}</p>}
           </div>
         );
 
@@ -134,12 +127,7 @@ export default function DynamicForm({ config, onSuccess }: DynamicFormProps) {
             <Label htmlFor={fieldId} className="block mb-2">
               {field.label} {field.required && <span className="text-red-500">*</span>}
             </Label>
-            <Select
-              id={fieldId}
-              value={formData[field.label] || ""}
-              onChange={(e) => handleChange(field.label, e.target.value)}
-              className={errors[field.label] ? "border-red-500" : ""}
-            >
+            <Select id={fieldId} value={formData[field.label] || ""} onChange={(e) => handleChange(field.label, e.target.value)} className={errors[field.label] ? "border-red-500" : ""}>
               <option value="">{field.hint || "Select an option"}</option>
               {field.options?.map((option) => (
                 <option key={option} value={option}>
@@ -147,9 +135,7 @@ export default function DynamicForm({ config, onSuccess }: DynamicFormProps) {
                 </option>
               ))}
             </Select>
-            {errors[field.label] && (
-              <p className="text-red-500 text-sm mt-1">{errors[field.label]}</p>
-            )}
+            {errors[field.label] && <p className="text-red-500 text-sm mt-1">{errors[field.label]}</p>}
           </div>
         );
 
@@ -166,32 +152,21 @@ export default function DynamicForm({ config, onSuccess }: DynamicFormProps) {
                     type="checkbox"
                     id={`${fieldId}-${option}`}
                     value={option}
-                    checked={(formData[field.label] || "")
-                      .split(",")
-                      .includes(option)}
+                    checked={(formData[field.label] || "").split(",").includes(option)}
                     onChange={(e) => {
-                      const currentValues = formData[field.label]
-                        ? formData[field.label].split(",").filter((v) => v)
-                        : [];
-                      const newValues = e.target.checked
-                        ? [...currentValues, option]
-                        : currentValues.filter((v) => v !== option);
+                      const currentValues = formData[field.label] ? formData[field.label].split(",").filter((v) => v) : [];
+                      const newValues = e.target.checked ? [...currentValues, option] : currentValues.filter((v) => v !== option);
                       handleChange(field.label, newValues.join(","));
                     }}
                     className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"
                   />
-                  <label
-                    htmlFor={`${fieldId}-${option}`}
-                    className="ml-2 text-sm"
-                  >
+                  <label htmlFor={`${fieldId}-${option}`} className="ml-2 text-sm">
                     {option}
                   </label>
                 </div>
               ))}
             </div>
-            {errors[field.label] && (
-              <p className="text-red-500 text-sm mt-1">{errors[field.label]}</p>
-            )}
+            {errors[field.label] && <p className="text-red-500 text-sm mt-1">{errors[field.label]}</p>}
           </div>
         );
 
@@ -213,18 +188,13 @@ export default function DynamicForm({ config, onSuccess }: DynamicFormProps) {
                     onChange={(e) => handleChange(field.label, e.target.value)}
                     className="h-4 w-4 text-primary border-gray-300 focus:ring-primary"
                   />
-                  <label
-                    htmlFor={`${fieldId}-${option}`}
-                    className="ml-2 text-sm"
-                  >
+                  <label htmlFor={`${fieldId}-${option}`} className="ml-2 text-sm">
                     {option}
                   </label>
                 </div>
               ))}
             </div>
-            {errors[field.label] && (
-              <p className="text-red-500 text-sm mt-1">{errors[field.label]}</p>
-            )}
+            {errors[field.label] && <p className="text-red-500 text-sm mt-1">{errors[field.label]}</p>}
           </div>
         );
 
@@ -236,12 +206,7 @@ export default function DynamicForm({ config, onSuccess }: DynamicFormProps) {
   return (
     <form onSubmit={handleSubmit}>
       {config.fields?.map(renderField)}
-      <Button
-        type="submit"
-        disabled={isSubmitting}
-        className="w-full mt-6"
-        size="lg"
-      >
+      <Button type="submit" disabled={isSubmitting} className="w-full mt-6" size="lg">
         {isSubmitting ? "Submitting..." : "Submit"}
       </Button>
     </form>

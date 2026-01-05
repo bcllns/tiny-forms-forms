@@ -6,7 +6,43 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(request: NextRequest) {
   try {
-    const { formConfig, formData } = await request.json();
+    const { formConfig, formData, recaptchaToken } = await request.json();
+
+    // Verify reCAPTCHA token
+    if (!recaptchaToken) {
+      return NextResponse.json({ error: "reCAPTCHA token missing" }, { status: 400 });
+    }
+
+    const recaptchaSecret = process.env.RECAPTCHA_SECRET_KEY;
+    if (recaptchaSecret && recaptchaSecret !== "your_recaptcha_secret_key_here") {
+      try {
+        const recaptchaResponse = await fetch("https://www.google.com/recaptcha/api/siteverify", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: `secret=${recaptchaSecret}&response=${recaptchaToken}`,
+        });
+
+        const recaptchaData = await recaptchaResponse.json();
+
+        console.log("reCAPTCHA verification result:", recaptchaData);
+
+        if (!recaptchaData.success) {
+          console.error("reCAPTCHA verification failed:", recaptchaData);
+          return NextResponse.json({ error: "reCAPTCHA verification failed. Please try again." }, { status: 400 });
+        }
+
+        // For v3, check score (0.0 to 1.0, higher is better)
+        if (recaptchaData.score !== undefined && recaptchaData.score < 0.5) {
+          console.warn("reCAPTCHA score too low:", recaptchaData.score);
+          return NextResponse.json({ error: "reCAPTCHA verification failed. Please try again." }, { status: 400 });
+        }
+      } catch (error) {
+        console.error("reCAPTCHA verification error:", error);
+        // Continue with submission if reCAPTCHA service is down
+      }
+    } else {
+      console.warn("reCAPTCHA secret key not configured - skipping verification");
+    }
 
     // Get client information
     const userIp = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
@@ -38,13 +74,18 @@ export async function POST(request: NextRequest) {
       emailBody += `${key}:\n${value}\n\n`;
     });
 
-    // Send email using Resend
-    await resend.emails.send({
-      from: "TinyForms <noreply@tinydev.co>",
-      to: formConfig.email_to,
-      subject: formConfig.email_subject,
-      text: emailBody,
-    });
+    // Use the Postmark or Resend clien to send email depending on the configuration
+    if (!formConfig.email_service && formConfig.email_service === "postmark") {
+      //use resend by default
+    } else {
+      // Send email using Resend
+      await resend.emails.send({
+        from: "Tiny Forms <noreply@tinydev.co>",
+        to: formConfig.email_to,
+        subject: formConfig.email_subject,
+        text: emailBody,
+      });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

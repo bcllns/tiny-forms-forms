@@ -118,7 +118,7 @@ export default function FormByIdPage({ params }: { params: Promise<{ formId: str
         </div>
       </main>
 
-      <Footer />
+      <Footer branding={formConfig.branding ? formConfig.branding : false} />
     </div>
   );
 }

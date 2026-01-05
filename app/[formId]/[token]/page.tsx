@@ -123,7 +123,7 @@ export default function PrivateFormPage({ params }: { params: Promise<{ formId: 
         </div>
       </main>
 
-      <Footer />
+      <Footer branding={formConfig.branding ? formConfig.branding : true} />
     </div>
   );
 }

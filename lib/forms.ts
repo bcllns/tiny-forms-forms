@@ -27,6 +27,7 @@ export interface Form {
   sharing_token?: string;
   form_password?: string;
   fields?: FormField[];
+  branding?: boolean;
 }
 
 /**

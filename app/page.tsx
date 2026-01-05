@@ -98,7 +98,7 @@ export default function Home() {
         </div>
       </main>
 
-      <Footer />
+      <Footer branding={formConfig.branding ? formConfig.branding : false} />
     </div>
   );
 }
