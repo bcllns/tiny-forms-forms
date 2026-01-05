@@ -1,0 +1,42 @@
+Supabse migration
+
+Update the app to use Supabase for form configuration.
+
+There should be three tables, forms, form_fields, and form_submissions.
+
+Forms will contain the basic information about the form.
+The schema for forms is:
+- id: string (UUID, primary key)
+- name: string
+- domain: string
+- email_to: string
+- email_subject: string
+- header_text: string
+- header_image: string
+- header_description: string
+- confirmation_message: string (optional)
+- owner: (UUID of the user who created the form) - this will be a foreign key to the users table and will be null for now until we implemnent authentication and the admin panel
+- private: boolean (whether the form is private or public)
+
+Form_fields will contain the fields for each form.
+The schema for form_fields is:
+- id: string (UUID, primary key)
+- form_id: string (UUID, foreign key to forms.id)
+- label: string
+- type: string (e.g. text, email, textarea, select, radio, checkbox)
+- required: boolean
+- options: string[] (for select, radio, checkbox types) 
+- hint: string (optional)
+- order: number (to determine the order of fields in the form)
+
+form_submissions will contain the submissions for each form.
+The schema for form_submissions is:
+- id: string (UUID, primary key)
+- form_id: string (UUID, foreign key to forms.id)
+- submission_data: JSON (to store the form submission data)
+- submitted_at: timestamp (to store the time of submission)
+- user_ip: string (to store the IP address of the user who submitted the form)
+- user_agent: string (to store the user agent of the user who submitted the form)
+- referrer: string (to store the referrer URL of the user who submitted the form)
+
+Update the app to use Supabase to fetch the form configuration and fields.

@@ -30,28 +30,33 @@ A simple web app for building customizable contact and web forms. Form Monkey al
 ### Installation
 
 1. Clone the repository:
+
 ```bash
 git clone <repository-url>
 cd form-monkey
 ```
 
 2. Install dependencies:
+
 ```bash
 npm install
 ```
 
 3. Create a `.env` file in the root directory:
+
 ```bash
 cp .env.example .env
 ```
 
 4. Add your Postmark API credentials to the `.env` file:
+
 ```
 POSTMARK_API_KEY=your_postmark_api_key_here
 POSTMARK_FROM_EMAIL=noreply@yourdomain.com
 ```
 
 5. Run the development server:
+
 ```bash
 npm run dev
 ```
@@ -125,7 +130,6 @@ Make sure to set the environment variables in your deployment platform.
 ## Future Enhancements
 
 - Google reCaptcha integration
-- Admin dashboard for form management
 - File upload support
 - Form analytics
 - Webhook integrations

@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { getFormByDomain, Form, getImageUrl } from "@/lib/forms";
+import { useState, useEffect, use } from "react";
+import { getFormById, Form, getImageUrl } from "@/lib/forms";
 import DynamicForm from "@/components/DynamicForm";
 import ConfirmationPage from "@/components/ConfirmationPage";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
-export default function Home() {
+export default function FormByIdPage({ params }: { params: Promise<{ formId: string }> }) {
+  const { formId } = use(params);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [formConfig, setFormConfig] = useState<Form | null>(null);
   const [loading, setLoading] = useState(true);
@@ -17,18 +18,37 @@ export default function Home() {
   useEffect(() => {
     async function fetchForm() {
       try {
-        // Get the current domain
-        const currentDomain = window.location.host;
+        //before checking the ID, make sure the domain is correct
+        //either localhost or share.tinyforms.co
+        const allowedHosts = ["localhost", "share.tinyforms.co"];
+        if (!allowedHosts.includes(window.location.hostname)) {
+          window.location.href = "https://tinyforms.co";
+          return;
+        }
 
-        // Fetch form by domain from Supabase
-        const formData = await getFormByDomain(currentDomain);
+        // UUID regex pattern
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-        console.log("Fetched form for domain:", currentDomain);
-        console.log("Form data:", formData);
+        // Validate UUID format
+        if (!uuidRegex.test(formId)) {
+          window.location.href = "https://tinyforms.co";
+          return;
+        }
 
-        // If domain not found, redirect to tinyforms.co
+        // Fetch the form from Supabase
+        const formData = await getFormById(formId);
+        console.log("Fetched form:", formId);
+
         if (!formData) {
-          //window.location.href = "https://tinyforms.co";
+          setError("Form not found");
+          setLoading(false);
+          return;
+        }
+
+        // Check if this is a private_link form - redirect to token-based URL
+        if (formData.privacy_policy === "private_link") {
+          setError("This form requires a valid access link");
+          setLoading(false);
           return;
         }
 
@@ -48,7 +68,7 @@ export default function Home() {
     }
 
     fetchForm();
-  }, []);
+  }, [formId]);
 
   const handleFormSuccess = () => {
     setShowConfirmation(true);

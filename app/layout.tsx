@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { ReCaptchaProvider } from "@/lib/recaptcha";
 
 export const metadata: Metadata = {
-  title: "Form Monkey",
-  description: "Easy to use web forms",
+  title: "Tiny Forms",
+  description: "Simple, customizable forms.",
 };
 
 export default function RootLayout({
@@ -13,7 +14,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <ReCaptchaProvider siteKey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || ""}>{children}</ReCaptchaProvider>
+      </body>
     </html>
   );
 }
