@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
+import * as postmark from "postmark";
 import { supabase } from "@/lib/supabase";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+const postmarkClient = new postmark.ServerClient(process.env.POSTMARK_API_KEY || "");
 
 export async function POST(request: NextRequest) {
   try {
@@ -75,12 +77,18 @@ export async function POST(request: NextRequest) {
     });
 
     // Use the Postmark or Resend clien to send email depending on the configuration
-    if (!formConfig.email_service && formConfig.email_service === "postmark") {
-      //use resend by default
+    // REsend is the default
+    if (formConfig.email_service && formConfig.email_service === "postmark") {
+      await postmarkClient.sendEmail({
+        From: formConfig.from_email || "noreply@tinydev.co",
+        To: formConfig.email_to,
+        Subject: formConfig.email_subject,
+        TextBody: emailBody,
+      });
     } else {
       // Send email using Resend
       await resend.emails.send({
-        from: "Tiny Forms <noreply@tinydev.co>",
+        from: formConfig.from_email || "Tiny Forms <noreply@tinydev.co>",
         to: formConfig.email_to,
         subject: formConfig.email_subject,
         text: emailBody,

@@ -28,6 +28,8 @@ export interface Form {
   form_password?: string;
   fields?: FormField[];
   branding?: boolean;
+  from_email?: string;
+  email_service?: "resend" | "postmark";
 }
 
 /**
