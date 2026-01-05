@@ -23,6 +23,9 @@ export interface Form {
   confirmation_message?: string;
   owner?: string;
   private: boolean;
+  privacy_policy?: "public" | "private_link" | "private_password";
+  sharing_token?: string;
+  form_password?: string;
   fields?: FormField[];
 }
 

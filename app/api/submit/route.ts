@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
+import { supabase } from "@/lib/supabase";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -12,8 +13,19 @@ export async function POST(request: NextRequest) {
     const userAgent = request.headers.get("user-agent") || "unknown";
     const referrer = request.headers.get("referer") || "unknown";
 
-    // Note: Database storage removed - forms are configured manually
-    // To re-enable, add your database logic here
+    // Store submission in Supabase
+    const { error: dbError } = await supabase.from("form_submissions").insert({
+      form_id: formConfig.id,
+      submission_data: formData,
+      user_ip: userIp,
+      user_agent: userAgent,
+      referrer: referrer,
+    });
+
+    if (dbError) {
+      console.error("Error storing form submission:", dbError);
+      // Continue with email even if database storage fails
+    }
 
     // Build email body
     let emailBody = `New form submission from ${formConfig.name}\n\n`;

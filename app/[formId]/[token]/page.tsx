@@ -7,8 +7,8 @@ import ConfirmationPage from "@/components/ConfirmationPage";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
-export default function FormByIdPage({ params }: { params: Promise<{ formId: string }> }) {
-  const { formId } = use(params);
+export default function PrivateFormPage({ params }: { params: Promise<{ formId: string; token: string }> }) {
+  const { formId, token } = use(params);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [formConfig, setFormConfig] = useState<Form | null>(null);
   const [loading, setLoading] = useState(true);
@@ -18,8 +18,7 @@ export default function FormByIdPage({ params }: { params: Promise<{ formId: str
   useEffect(() => {
     async function fetchForm() {
       try {
-        //before checking the ID, make sure the domain is correct
-        //either localhost or share.tinyforms.co
+        // Validate allowed hosts
         const allowedHosts = ["localhost", "share.tinyforms.co"];
         if (!allowedHosts.includes(window.location.hostname)) {
           window.location.href = "https://tinyforms.co";
@@ -37,18 +36,24 @@ export default function FormByIdPage({ params }: { params: Promise<{ formId: str
 
         // Fetch the form from Supabase
         const formData = await getFormById(formId);
-        console.log("Fetched form:", formId);
+        console.log("Fetched private form:", formId);
 
         if (!formData) {
-          setError("Form not found");
+          setError("Form not found 1");
           setLoading(false);
           return;
         }
 
-        // Check if this is a private_link form - redirect to token-based URL
+        // Validate privacy settings and token
         if (formData.privacy_policy === "private_link") {
-          setError("This form requires a valid access link");
-          setLoading(false);
+          if (!formData.sharing_token || formData.sharing_token !== token) {
+            setError("Invalid access token");
+            setLoading(false);
+            return;
+          }
+        } else {
+          // If the form is not a private_link form, redirect to regular form page
+          window.location.href = `/${formId}`;
           return;
         }
 
@@ -68,7 +73,7 @@ export default function FormByIdPage({ params }: { params: Promise<{ formId: str
     }
 
     fetchForm();
-  }, [formId]);
+  }, [formId, token]);
 
   const handleFormSuccess = () => {
     setShowConfirmation(true);
